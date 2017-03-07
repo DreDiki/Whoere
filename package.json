@@ -1,0 +1,29 @@
+{
+  "name": "whoere",
+  "version": "1.0.0",
+  "description": "Whoere Server For Nearby Instant Message",
+  "main": "server.js",
+  "dependencies": {
+    "express": "^4.15.1",
+    "socket.io": "^1.7.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "node server.js",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DreDiki/Whoere.git"
+  },
+  "keywords": [
+    "Simple",
+    "Server"
+  ],
+  "author": "DreDiki",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DreDiki/Whoere/issues"
+  },
+  "homepage": "https://github.com/DreDiki/Whoere#readme"
+}

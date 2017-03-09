@@ -21,6 +21,7 @@ var server = http.createServer(app);    //
 var io = require('socket.io').listen(server);
 var EARTH_RADIUS = 6378137.0;    //Meter
 var userCollection = {};//TODO change to mysql
+var simplifiedUsers = {};
 var clientCollection = {};
 // clientCollection.array = [];
 // to save memory,not using fake class yet
@@ -57,6 +58,7 @@ io.on('connection', function (client) {
             clientCollection[client.id].wwBoundUser = user.userName;
             user.online = true;
             userCollection[user.userName].id = client.id;
+            simplifiedUsers[user.userName] = new SimpleUser(userCollection[user.userName]);
             joinNearBy(clientCollection[client.id]);
             console.log(user.userName + " Login Success");
             client.emit('feedback', 'login', resultCodes.RESULT_SUCCESS);
@@ -86,6 +88,14 @@ io.on('connection', function (client) {
     client.on('logout', function () {
         Logout(client);
     });
+    client.on('delete', function () {
+        var userName = clientCollection[client.id].wwBoundUser;
+        if (typeof(userName) != "undefined") {
+            console.log("User Account %s deleted", userName);
+            userCollection[userName].guest = true;
+            Logout(client);
+        }
+    });
     client.on('updatePosition', function (data) {
         var position = JSON.parse(data);
         var userName = clientCollection[client.id].wwBoundUser;
@@ -93,6 +103,7 @@ io.on('connection', function (client) {
             console.log("updatePosition:" + userName);
             position.recordTime = new Date().getTime();//the same as java: system.currenttimemillis
             userCollection[userName].currentPosition = position;
+            simplifiedUsers[userName].currentPosition = position;
             joinNearBy(clientCollection[client.id]);
         }
     });
@@ -107,32 +118,47 @@ io.on('connection', function (client) {
         var userName = clientCollection[client.id].wwBoundUser;
         console.log("received broadcast:" + namespace + ",message:" + message);
         if (namespace == "nearby") {
-            client.to("nearBy" + client.id).emit("broadcast", namespace, new SimpleUser(userCollection[userName]), message);
+            client.to("nearBy" + client.id).emit("broadcast", "nearby", simplifiedUsers[userName], message);
         } else if (namespace == "all") {
-            client.broadcast.emit("broadcast", namespace, new SimpleUser(userCollection[userName]), message);
+            client.broadcast.emit("broadcast", namespace,simplifiedUsers[userName], message);
         }
         else {
-            client.to(namespace).emit("broadcast", namespace, new SimpleUser(userCollection[userName]), message);
+            client.to(namespace).emit("broadcast", namespace, simplifiedUsers[userName], message);
         }
     });
     client.on('chat', function (id, message) {
         var userName = clientCollection[client.id].wwBoundUser;
-        client.to(id).emit('chat', new SimpleUser(userCollection[userName]), message);
+        client.to(id).emit('chat', simplifiedUsers[userName], message);
     });
     client.on("users",function (range) {
+        var result = [];
         if(range=="all"){
-
+            for (var user in simplifiedUsers) {
+                result.push(simplifiedUsers[user]);
+            }
         } else if(range == "nearby"){
-
-        }else if(range == "byname"){
+            var tempClient;
+            for (var roomname in client.rooms) {
+                if(client.rooms.hasOwnProperty(roomname)&&roomname.indexOf("nearby")==0){
+                    tempClient = client.rooms[roomname].substring(6);
+                    result.push(simplifiedUsers[clientCollection[tempClient].wwBoundUser]);
+                }
+            }
+        }else if(range == "byname"){//todo support search
+            
+        }
+        client.emit("users",range,result);
+    });
+    client.on("user",function (way,arg) {
+        if(way=="byname"){
 
         }
-    })
+    });
 });
 
 //Functions
 function joinNearBy(client0) {
-    console.log("Start to find nearbys");
+    console.log("Start to find nearby users "+client0.wwBoundUser);
     var user0 = userCollection[client0.wwBoundUser],
         position0, client1,
         user1, position1, distance;
@@ -149,22 +175,22 @@ function joinNearBy(client0) {
         if (typeof(position1) == "undefined")continue;
         //calculate distance
         distance = GetDistance(position0.latitude, position0.longitude, position1.latitude, position1.longitude);
-        console.log("Distance from " + user0.userName + " to " + user1.userName + " is " + distance);
+        // console.log("Distance from " + user0.userName + " to " + user1.userName + " is " + distance);
         if (user0.nearByDistance > distance) {
             //add user0 to user1's room
-            client0.join("nearBy" + client1.id, function (err) {
+            client0.join("nearby" + client1.id, function (err) {
                 if (err) {
                     console.log("Error occurred:" + err);
                 } else {
-                    client0.emit("nearby", "find", new SimpleUser(user1));
+                    client0.emit("nearby", "find", simplifiedUsers[user1.userName]);
                 }
             });
         } else {
-            client0.leave("nearBy" + client1.id, function (err) {
+            client0.leave("nearby" + client1.id, function (err) {
                 if (err) {
                     console.log("Error occurred:" + err);
                 } else {
-                    client0.emit("nearby", "leave", new SimpleUser(user1));
+                    client0.emit("nearby", "leave",simplifiedUsers[user1.userName]);
                 }
             });
         }
@@ -174,7 +200,7 @@ function joinNearBy(client0) {
                 if (err) {
                     console.log("Error occurred:" + err);
                 } else {
-                    client1.emit("nearby", "find", new SimpleUser(user0));
+                    client1.emit("nearby", "find", simplifiedUsers[user0.userName]);
                 }
             });
         } else {
@@ -182,29 +208,13 @@ function joinNearBy(client0) {
                 if (err) {
                     console.log("Error occurred:" + err);
                 } else {
-                    client1.emit("nearby", "leave",new SimpleUser(user0));
+                    client1.emit("nearby", "leave",simplifiedUsers[user0.userName]);
                 }
             });
         }
-        console.log("Distance :" + distance);
+        // console.log("Distance :" + distance);
         // }
     }
-    /*
-     for (var key = 0; key < clientCollection.array.length; key++) {
-     if (clientCollection.array[key] == client.id)continue;
-     client1 = clientCollection[clientCollection.array[key]];
-     if (typeof(client1.wwBoundUser) == "undefined")continue;
-     user1 = userCollection[client1.wwBoundUser];
-     position1 = user1.currentPosition;
-     if (typeof(position1) == "undefined")continue;
-     //calculate distance
-     distance = GetDistance(position0.latitude, position0.longitude, position1.latitude, position1.longitude);
-     if(user0.nearByDistance>distance){
-     //add user0 to user1's room
-     client.join(client1.id)
-     }
-     console.log("Distance :" + distance);
-     }*/
 }
 
 function Logout(client) {
@@ -212,8 +222,10 @@ function Logout(client) {
     if (typeof(userName) != "undefined") {
         console.log("User %s Logout", userName);
         if (userCollection[userName].guest) {
+            delete simplifiedUsers[userName];
             delete userCollection[userName];
         } else {
+            simplifiedUsers[userName].online = false;
             userCollection[userName].online = false;
         }
         delete clientCollection[client.id].wwBoundUser;

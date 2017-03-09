@@ -12,8 +12,24 @@
 ## 安装方法(^v^)
 
 * 下载[wwclient.jar](./client/wwclient.jar)
-* 将下载的Whoere SDK 的 jar包复制到工程的 libs 目录下，如果有老版本 jar 包在其中，请删除。
-* 在Studio中选择wwclient.jar右键,Add as library
+* 将下载的wwclieet.jar包复制到工程的 libs 目录下，如果有老版本 jar 包在其中，请删除。
+* 在app的build.gradle中(项目路径\app\build.gradle)
+找到dependencies,添加如下代码:
+
+
+```
+dependencies {
+    ...
+    //添加下面的代码
+    compile ('io.socket:socket.io-client:0.8.3') {
+        // excluding org.json which is provided by Android
+        exclude group: 'org.json', module: 'json'
+    }
+    compile 'com.google.code.gson:gson:2.8.0'
+}
+```
+如下图所示:
+![ScreenShot 1](./screenshots/model_install.png "ScreenShot 1")
 
 ---
 ## 使用方法 *^_^*

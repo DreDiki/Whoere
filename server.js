@@ -100,7 +100,7 @@ io.on('connection', function (client) {
         var position = JSON.parse(data);
         var userName = clientCollection[client.id].wwBoundUser;
         if (typeof(userName) != "undefined") {
-            console.log("updatePosition:" + userName);
+            // console.log("updatePosition:" + userName);
             position.recordTime = new Date().getTime();//the same as java: system.currenttimemillis
             userCollection[userName].currentPosition = position;
             simplifiedUsers[userName].currentPosition = position;

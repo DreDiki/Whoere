@@ -3,6 +3,16 @@
  * Version 1.0
  * Created by DreDiki
  */
+//ERRORS
+var resultCodes = {
+    RESULT_SUCCESS: 0,
+    RESULT_ERROR_UNKNOWN: -1,
+    RESULT_ERROR_EXCEPTION: -2,
+    RESULT_ERROR_CONNECT: -3,
+    RESULT_ERROR_AUTHENTICATION: -4,
+    RESULT_ERROR_HASONLINE: -5,
+    RESULT_ERROR_OPERATION_TOO_FREQUENT : -6
+};
 var http = require('http');
 var express = require('express');
 var port = process.env.PORT || 233;
@@ -12,7 +22,7 @@ var io = require('socket.io').listen(server);
 var EARTH_RADIUS = 6378137.0;    //Meter
 var userCollection = {};//TODO change to mysql
 var clientCollection = {};
-clientCollection.array = [];
+// clientCollection.array = [];
 // to save memory,not using fake class yet
 
 server.listen(port, function () {
@@ -21,107 +31,204 @@ server.listen(port, function () {
 io.on('connection', function (client) {
     console.log('A client connected: ' + client.id);
     clientCollection[client.id] = client;
-    clientCollection.array.push(client.id);
+    // clientCollection.array.push(client.id);
     client.on('disconnect', function (reason) {
         console.log('A client disconnected: ' + client.id + " Because:" + reason);
-        var userName = clientCollection[client.id].wwBoundUser;
-        if (typeof(userName) != "undefined") {
-            if (userCollection[userName].guest) {
-                delete userCollection[userName];
-            }else {
-                userCollection[userName].online = false;
-            }
-        }
-        for (var key=0;key<clientCollection.array.length;key++){
-            if(clientCollection.array[key]==client.id){
-                clientCollection.array.splice(key,1);
-                key-=1;
-            }
-        }
+        Logout(client);
+        // for (var key = 0; key < clientCollection.array.length; key++) {
+        //     if (clientCollection.array[key] == client.id) {
+        //         clientCollection.array.splice(key, 1);
+        //         key -= 1;
+        //     }
+        // }
         delete clientCollection[client.id];
     });
     client.on('login', function (data) {
         var user = JSON.parse(data);
+        delete user.self;
+        user.id = client.id;
         var saved = userCollection[user.userName];
         if (typeof(saved) == "undefined") {
             userCollection[user.userName] = user;
-            if(typeof (clientCollection[client.id].wwBoundUser)!="undefined"){
+            if (typeof (clientCollection[client.id].wwBoundUser) != "undefined") {
                 //has already a user bound to the client
-                LogOut(client);
+                Logout(client);
             }
             clientCollection[client.id].wwBoundUser = user.userName;
+            user.online = true;
             userCollection[user.userName].id = client.id;
             joinNearBy(clientCollection[client.id]);
-            console.log(user.userName+ " Login Success");
-            client.emit('feedback','login',0);
+            console.log(user.userName + " Login Success");
+            client.emit('feedback', 'login', resultCodes.RESULT_SUCCESS);
         } else {
-            if (saved.password == user.password && !saved.online) { //login success
+            if (saved.password == user.password) { //login success
+                if (saved.online == true) {
+                    client.emit('feedback', 'login', resultCodes.RESULT_ERROR_HASONLINE);
+                    console.log(user.userName + " Login Failed");
+                    return;
+                }
                 saved.online = true;
-                if(typeof (clientCollection[client.id].wwBoundUser)!="undefined"){
+                if (typeof (clientCollection[client.id].wwBoundUser) != "undefined") {
                     //has already a user bound to the client
-                    LogOut(client);
+                    Logout(client);
                 }
                 clientCollection[client.id].wwBoundUser = user.userName;
                 saved.id = client.id;
                 joinNearBy(clientCollection[client.id]);
-                console.log(user.userName+ " Login Success");
-                client.emit('feedback','login',0);
+                console.log(user.userName + " Login Success");
+                client.emit('feedback', 'login', resultCodes.RESULT_SUCCESS);
             } else {//login failed
-                console.log(user.userName+ " Login Failed");
-                client.emit('feedback','login',-1);
+                console.log(user.userName + " Login Failed");
+                client.emit('feedback', 'login', resultCodes.RESULT_ERROR_AUTHENTICATION);
             }
         }
     });
     client.on('logout', function () {
-        LogOut(client);
+        Logout(client);
     });
     client.on('updatePosition', function (data) {
-        console.log("updatePosition:"+data);
         var position = JSON.parse(data);
         var userName = clientCollection[client.id].wwBoundUser;
         if (typeof(userName) != "undefined") {
+            console.log("updatePosition:" + userName);
             position.recordTime = new Date().getTime();//the same as java: system.currenttimemillis
             userCollection[userName].currentPosition = position;
+            joinNearBy(clientCollection[client.id]);
         }
-        joinNearBy(clientCollection[client.id]);
     });
-});
-io.sockets.emit();
+    client.on('room', function (action, roomName) {
+        if (action == "join") {
+            clientCollection[client.id].join(roomName, null);
+        } else if (action == "leave") {
+            clientCollection[client.id].leave(roomName, null);
+        }
+    });
+    client.on('broadcast', function (namespace, message) {
+        var userName = clientCollection[client.id].wwBoundUser;
+        console.log("received broadcast:" + namespace + ",message:" + message);
+        if (namespace == "nearby") {
+            client.to("nearBy" + client.id).emit("broadcast", namespace, new SimpleUser(userCollection[userName]), message);
+        } else if (namespace == "all") {
+            client.broadcast.emit("broadcast", namespace, new SimpleUser(userCollection[userName]), message);
+        }
+        else {
+            client.to(namespace).emit("broadcast", namespace, new SimpleUser(userCollection[userName]), message);
+        }
+    });
+    client.on('chat', function (id, message) {
+        var userName = clientCollection[client.id].wwBoundUser;
+        client.to(id).emit('chat', new SimpleUser(userCollection[userName]), message);
+    });
+    client.on("users",function (range) {
+        if(range=="all"){
 
+        } else if(range == "nearby"){
+
+        }else if(range == "byname"){
+
+        }
+    })
+});
 
 //Functions
-function joinNearBy(client) {
-    var user0 = userCollection[client.wwBoundUser],
-        position0 = user0.currentPosition,
-        client1,user1,position1,distance;
-    if(typeof(position0)=="undefined")return;
-    for (var key=0;key<clientCollection.array.length;key++){
-        if(clientCollection.array[key]==client.id)continue;
-        client1 = clientCollection[clientCollection.array[key]];
-        if(typeof(client1.wwBoundUser)=="undefined")continue;
+function joinNearBy(client0) {
+    console.log("Start to find nearbys");
+    var user0 = userCollection[client0.wwBoundUser],
+        position0, client1,
+        user1, position1, distance;
+    if (typeof(user0.currentPosition) == "undefined")return;
+    position0 = user0.currentPosition;
+    // console.log(clientCollection);
+    for (var clientID in clientCollection) {
+        client1 = clientCollection[clientID];
+        // if (clientCollection.hasOwnProperty(client1)) { //filter
+        if (client1 == client0)continue;
+        if (typeof(client1.wwBoundUser) == "undefined")continue;
         user1 = userCollection[client1.wwBoundUser];
         position1 = user1.currentPosition;
-        if(typeof(position1)=="undefined")continue;
+        if (typeof(position1) == "undefined")continue;
         //calculate distance
-        distance = GetDistance(position0.latitude,position0.longitude,position1.latitude,position1.longitude);
-        console.log("Distance :"+distance);
+        distance = GetDistance(position0.latitude, position0.longitude, position1.latitude, position1.longitude);
+        console.log("Distance from " + user0.userName + " to " + user1.userName + " is " + distance);
+        if (user0.nearByDistance > distance) {
+            //add user0 to user1's room
+            client0.join("nearBy" + client1.id, function (err) {
+                if (err) {
+                    console.log("Error occurred:" + err);
+                } else {
+                    client0.emit("nearby", "find", new SimpleUser(user1));
+                }
+            });
+        } else {
+            client0.leave("nearBy" + client1.id, function (err) {
+                if (err) {
+                    console.log("Error occurred:" + err);
+                } else {
+                    client0.emit("nearby", "leave", new SimpleUser(user1));
+                }
+            });
+        }
+        if (user1.nearByDistance > distance) {
+            //add user1 to user0's room
+            client1.join("nearby" + client0.id, function (err) {
+                if (err) {
+                    console.log("Error occurred:" + err);
+                } else {
+                    client1.emit("nearby", "find", new SimpleUser(user0));
+                }
+            });
+        } else {
+            client1.leave("nearby" + client0.id, function (err) {
+                if (err) {
+                    console.log("Error occurred:" + err);
+                } else {
+                    client1.emit("nearby", "leave",new SimpleUser(user0));
+                }
+            });
+        }
+        console.log("Distance :" + distance);
+        // }
     }
+    /*
+     for (var key = 0; key < clientCollection.array.length; key++) {
+     if (clientCollection.array[key] == client.id)continue;
+     client1 = clientCollection[clientCollection.array[key]];
+     if (typeof(client1.wwBoundUser) == "undefined")continue;
+     user1 = userCollection[client1.wwBoundUser];
+     position1 = user1.currentPosition;
+     if (typeof(position1) == "undefined")continue;
+     //calculate distance
+     distance = GetDistance(position0.latitude, position0.longitude, position1.latitude, position1.longitude);
+     if(user0.nearByDistance>distance){
+     //add user0 to user1's room
+     client.join(client1.id)
+     }
+     console.log("Distance :" + distance);
+     }*/
 }
 
-function LogOut(client) {
+function Logout(client) {
     var userName = clientCollection[client.id].wwBoundUser;
     if (typeof(userName) != "undefined") {
-        console.log("User %s Logout",userName);
+        console.log("User %s Logout", userName);
         if (userCollection[userName].guest) {
             delete userCollection[userName];
-        }else {
+        } else {
             userCollection[userName].online = false;
         }
         delete clientCollection[client.id].wwBoundUser;
     }
-    client.emit('feedback','logout',0);
+    client.emit('feedback', 'logout', resultCodes.RESULT_SUCCESS);
 }
 
+function SimpleUser(user) {
+    this.userName = user.userName;
+    this.online = user.online;
+    this.id = user.id;
+    this.currentPosition = user.currentPosition;
+    this.nearByDistance = user.nearByDistance;
+    return this;
+}
 
 function Rad(d) {
     return d * Math.PI / 180.0;//To rad

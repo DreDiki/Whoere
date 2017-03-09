@@ -118,7 +118,7 @@ io.on('connection', function (client) {
         var userName = clientCollection[client.id].wwBoundUser;
         console.log("received broadcast:" + namespace + ",message:" + message);
         if (namespace == "nearby") {
-            client.to("nearBy" + client.id).emit("broadcast", "nearby", simplifiedUsers[userName], message);
+            client.to("nearby" + client.id).emit("broadcast", "nearby", simplifiedUsers[userName], message);
         } else if (namespace == "all") {
             client.broadcast.emit("broadcast", namespace,simplifiedUsers[userName], message);
         }
@@ -145,7 +145,7 @@ io.on('connection', function (client) {
                 }
             }
         }else if(range == "byname"){//todo support search
-            
+
         }
         client.emit("users",range,result);
     });

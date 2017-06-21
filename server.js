@@ -11,10 +11,11 @@ var resultCodes = {
     RESULT_ERROR_CONNECT: -3,
     RESULT_ERROR_AUTHENTICATION: -4,
     RESULT_ERROR_HASONLINE: -5,
-    RESULT_ERROR_OPERATION_TOO_FREQUENT : -6
+    RESULT_ERROR_OPERATION_TOO_FREQUENT: -6
 };
 var http = require('http');
 var express = require('express');
+var mysql = require('mysql');
 var port = process.env.PORT || 233;
 var app = express();
 var server = http.createServer(app);    //
@@ -33,6 +34,7 @@ io.on('connection', function (client) {
     console.log('A client connected: ' + client.id);
     clientCollection[client.id] = client;
     // clientCollection.array.push(client.id);
+    clientCollection[client.id].version = 1;
     client.on('disconnect', function (reason) {
         console.log('A client disconnected: ' + client.id + " Because:" + reason);
         Logout(client);
@@ -88,6 +90,9 @@ io.on('connection', function (client) {
     client.on('logout', function () {
         Logout(client);
     });
+    client.on('clientInfo',function (version) {
+        clientCollection[client.id].version = version;
+    });
     client.on('delete', function () {
         var userName = clientCollection[client.id].wwBoundUser;
         if (typeof(userName) != "undefined") {
@@ -97,6 +102,9 @@ io.on('connection', function (client) {
         }
     });
     client.on('updatePosition', function (data) {
+        if (typeof (clientCollection[client.id].wwBoundUser) == "undefined") {
+            return;
+        }
         var position = JSON.parse(data);
         var userName = clientCollection[client.id].wwBoundUser;
         if (typeof(userName) != "undefined") {
@@ -108,6 +116,9 @@ io.on('connection', function (client) {
         }
     });
     client.on('room', function (action, roomName) {
+        if (typeof (clientCollection[client.id].wwBoundUser) == "undefined") {
+            return;
+        }
         if (action == "join") {
             clientCollection[client.id].join(roomName, null);
         } else if (action == "leave") {
@@ -115,42 +126,51 @@ io.on('connection', function (client) {
         }
     });
     client.on('broadcast', function (namespace, message) {
+        if (typeof (clientCollection[client.id].wwBoundUser) == "undefined") {
+            return;
+        }
         var userName = clientCollection[client.id].wwBoundUser;
         console.log("received broadcast:" + namespace + ",message:" + message);
         if (namespace == "nearby") {
             client.to("nearby" + client.id).emit("broadcast", "nearby", simplifiedUsers[userName], message);
         } else if (namespace == "all") {
-            client.broadcast.emit("broadcast", namespace,simplifiedUsers[userName], message);
+            client.broadcast.emit("broadcast", namespace, simplifiedUsers[userName], message);
         }
         else {
             client.to(namespace).emit("broadcast", namespace, simplifiedUsers[userName], message);
         }
     });
     client.on('chat', function (id, message) {
+        if (typeof (clientCollection[client.id].wwBoundUser) == "undefined") {
+            return;
+        }
         var userName = clientCollection[client.id].wwBoundUser;
         client.to(id).emit('chat', simplifiedUsers[userName], message);
     });
-    client.on("users",function (range) {
+    client.on("users", function (range) {
+        if (typeof (clientCollection[client.id].wwBoundUser) == "undefined") {
+            return;
+        }
         var result = [];
-        if(range=="all"){
+        if (range == "all") {
             for (var user in simplifiedUsers) {
                 result.push(simplifiedUsers[user]);
             }
-        } else if(range == "nearby"){
+        } else if (range == "nearby") {
             var tempClient;
             for (var roomname in client.rooms) {
-                if(client.rooms.hasOwnProperty(roomname)&&roomname.indexOf("nearby")==0){
+                if (client.rooms.hasOwnProperty(roomname) && roomname.indexOf("nearby") == 0) {
                     tempClient = client.rooms[roomname].substring(6);
                     result.push(simplifiedUsers[clientCollection[tempClient].wwBoundUser]);
                 }
             }
-        }else if(range == "byname"){//todo support search
+        } else if (range == "byname") {//todo support search
 
         }
-        client.emit("users",range,result);
+        client.emit("users", range, result);
     });
-    client.on("user",function (way,arg) {
-        if(way=="byname"){
+    client.on("user", function (way, arg) {
+        if (way == "byname") {
 
         }
     });
@@ -158,7 +178,7 @@ io.on('connection', function (client) {
 
 //Functions
 function joinNearBy(client0) {
-    console.log("Start to find nearby users "+client0.wwBoundUser);
+    console.log("Start to find nearby users " + client0.wwBoundUser);
     var user0 = userCollection[client0.wwBoundUser],
         position0, client1,
         user1, position1, distance;
@@ -178,39 +198,51 @@ function joinNearBy(client0) {
         // console.log("Distance from " + user0.userName + " to " + user1.userName + " is " + distance);
         if (user0.nearByDistance > distance) {
             //add user0 to user1's room
-            client0.join("nearby" + client1.id, function (err) {
-                if (err) {
-                    console.log("Error occurred:" + err);
-                } else {
-                    client0.emit("nearby", "find", simplifiedUsers[user1.userName]);
-                }
-            });
+            if (!client0.rooms.hasOwnProperty("nearby" + client1.id)) {
+                client0.join("nearby" + client1.id, function (err) {
+                    if (err) {
+                        console.log("Error occurred:" + err);
+                    } else {
+                        client0.emit("nearby", "find", simplifiedUsers[user1.userName]);
+                    }
+                });
+            }else {
+                client1.emit("nearby", "update", simplifiedUsers[user1.userName]);
+            }
         } else {
-            client0.leave("nearby" + client1.id, function (err) {
-                if (err) {
-                    console.log("Error occurred:" + err);
-                } else {
-                    client0.emit("nearby", "leave",simplifiedUsers[user1.userName]);
-                }
-            });
+            if (client0.rooms.hasOwnProperty("nearby" + client1.id)) {
+                client0.leave("nearby" + client1.id, function (err) {
+                    if (err) {
+                        console.log("Error occurred:" + err);
+                    } else {
+                        client0.emit("nearby", "leave", simplifiedUsers[user1.userName]);
+                    }
+                });
+            }
         }
         if (user1.nearByDistance > distance) {
             //add user1 to user0's room
-            client1.join("nearby" + client0.id, function (err) {
-                if (err) {
-                    console.log("Error occurred:" + err);
-                } else {
-                    client1.emit("nearby", "find", simplifiedUsers[user0.userName]);
-                }
-            });
+            if (!client1.rooms.hasOwnProperty("nearby" + client1.id)) {
+                client1.join("nearby" + client0.id, function (err) {
+                    if (err) {
+                        console.log("Error occurred:" + err);
+                    } else {
+                        client1.emit("nearby", "find", simplifiedUsers[user0.userName]);
+                    }
+                });
+            }else {
+                client1.emit("nearby", "update", simplifiedUsers[user0.userName]);
+            }
         } else {
-            client1.leave("nearby" + client0.id, function (err) {
-                if (err) {
-                    console.log("Error occurred:" + err);
-                } else {
-                    client1.emit("nearby", "leave",simplifiedUsers[user0.userName]);
-                }
-            });
+            if (client1.rooms.hasOwnProperty("nearby" + client1.id)) {
+                client1.leave("nearby" + client0.id, function (err) {
+                    if (err) {
+                        console.log("Error occurred:" + err);
+                    } else {
+                        client1.emit("nearby", "leave", simplifiedUsers[user0.userName]);
+                    }
+                });
+            }
         }
         // console.log("Distance :" + distance);
         // }

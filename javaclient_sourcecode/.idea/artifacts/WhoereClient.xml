@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="WhoereClient">
+    <output-path>$PROJECT_DIR$/out/artifacts/WhoereClient</output-path>
+    <root id="archive" name="WhoereClient.jar">
+      <element id="module-output" name="WhoereClient" />
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+    </root>
+  </artifact>
+</component>

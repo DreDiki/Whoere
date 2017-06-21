@@ -12,7 +12,7 @@
 ---
 ## 安装方法(^v^)
 
-* 下载[wwclient.jar](./client/wwclient.jar)
+* 下载[wwclient.jar](./javaclient/wwclient.jar)
 * 将下载的wwclieet.jar包复制到工程的 libs 目录下，如果有老版本 jar 包在其中，请删除。
 * 在app的build.gradle中(项目路径\app\build.gradle)
 找到dependencies,添加如下代码:
@@ -179,7 +179,7 @@ client.setFeedbackListener(new Client.FeedbackListener() {
 ---
 ## 现在的问题 ╮(╯▽╰)╭
 
-* 账户信息未存储到数据库,关端即丢
+* ~~账户信息未存储到数据库,关端即丢~~已采用MongoDB
 * 可能存在一些小问题
 
 ---
@@ -190,6 +190,12 @@ client.setFeedbackListener(new Client.FeedbackListener() {
 如果实在需要改动核心方法,请大家理解QAQ
 
 ---
+#### Version 2.0
+对应服务器代码server2.js,服务端需要MongoDB数据库,支持服务端指令,支持上传头像,向下兼容1.X客户端
+
+#### Version 1.1
+修复服务器允许不登陆发消息的问题
+
 #### Version 1.0
 
 第一版,可能有些Bug,欢迎[Pull](https://github.com/DreDiki/Whoere/pulls)或是提交[Issue](https://github.com/DreDiki/Whoere/issues)

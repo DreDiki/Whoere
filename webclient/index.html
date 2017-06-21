@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+    <title>Whoere</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="css/dialog-polyfill.css">
+    <link rel="stylesheet" href="css/material.min-gw.css">
+    <link rel="stylesheet" href="css/main.css">
+    <script defer src="js/dialog-polyfill.js"></script>
+    <script defer src="js/material.min.js"></script>
+    <script defer src="js/socket.io.min.js"></script>
+    <script defer src="js/main.js"></script>
+    <script src="js/jquery.min.js"></script>
+
+    <!-- Add to homescreen for Chrome on Android -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" sizes="180*180" href="img/apple-touch-icon.png">
+
+    <!-- Add to homescreen for Safari on iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Material Design Lite">
+    <link rel="apple-touch-icon-precomposed" href="img/apple-touch-icon.png">
+
+    <!-- Tile icon for Win8 (144x144 + tile color) -->
+    <meta name="msapplication-TileImage" content="img/apple-touch-icon.png">
+    <meta name="msapplication-TileColor" content="#4caf50">
+
+    <link rel="shortcut icon" href="img/favicon.ico">
+
+    <meta name="theme-color" content="#4caf50">
+
+</head>
+<body>
+<dialog id="dialog_login" class="mdl-dialog" onclick="">
+    <h3 class="mdl-dialog__title">Login</h3>
+    <div class="mdl-dialog__content">
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+            <input class="mdl-textfield__input" type="text" id="login_username">
+            <label class="mdl-textfield__label" for="login_username">User name</label>
+        </div>
+        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label">
+            <input class="mdl-textfield__input" type="password" id="login_password">
+            <label class="mdl-textfield__label" for="login_password">Password</label>
+            <span class="mdl-textfield__error">????</span>
+        </div>
+        <p id="login_tips" class="mdl-color-text--red"></p>
+        <!-- MDL Progress Bar with Indeterminate Progress -->
+        <div id="login_waiting" class="mdl-progress mdl-js-progress mdl-progress__indeterminate" hidden></div>
+    </div>
+    <div class="mdl-dialog__actions">
+        <button type="button" class="mdl-button mdl-button--colored" id="login_login">Login</button>
+        <button type="button" class="mdl-button" id="login_close">Close</button>
+    </div>
+</dialog>
+<div class="mdl-main mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+        <div class="mdl-layout__header-row">
+            <!-- Title -->
+            <span class="mdl-layout-title">Whoere</span>
+            <!-- Add spacer, to align navigation to the right -->
+            <div class="mdl-layout-spacer"></div>
+            <!-- Navigation -->
+            <nav class="mdl-navigation">
+                <a class="mdl-navigation__link" href="javascript:void(0);" onclick="dialog_login.showModal();">login</a>
+                <a class="mdl-navigation__link" href="http://drediki.com">blog</a>
+                <a class="mdl-navigation__link" href="https://github.com/DreDiki/Whoere">github</a>
+            </nav>
+        </div>
+    </header>
+    <div class="mdl-layout__drawer">
+        <span class="mdl-layout-title" id="drawer_title">Please Login</span>
+        <nav class="mdl-navigation">
+            <a class="mdl-navigation__link" href="">还在做</a>
+            <a class="mdl-navigation__link" href="">还没写报告</a>
+            <a class="mdl-navigation__link" href="">还想玩游戏</a>
+            <a class="mdl-navigation__link" href="">充满决心</a>
+        </nav>
+    </div>
+    <main class="mdl-layout__content mdl-main-content">
+        <div class="mdl-grid mdl-chatview">
+            <div class="mdl-cell mdl-cell--4-col mdl-cell--hide-tablet mdl-cell--hide-phone"></div>
+            <div class="talking-content mdl-color--white mdl-shadow--4dp content mdl-color-text--grey-800 mdl-cell mdl-cell--4-col">
+                <div class="chat_head">
+                    <div class="mdl-color-text--accent">Online User:</div>
+                    <hr>
+                </div>
+                <div class="chat_content" id="chat_content">
+                </div>
+                <div class="chat_input">
+                    <div class="mdl-textfield mdl-js-textfield mdl-chat-input">
+                        <input class="mdl-textfield__input" type="text" id="chat_text">
+                        <label class="mdl-textfield__label" for="chat_text">Chat</label>
+                    </div>
+                    <!-- Colored icon button -->
+                    <button class="mdl-button mdl-js-button mdl-button--icon mdl-button--colored" onclick="send()">
+                        <i class="material-icons">send</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div id="toast_snackbar" class="mdl-js-snackbar mdl-snackbar">
+            <div class="mdl-snackbar__text"></div>
+            <button class="mdl-snackbar__action" type="button"></button>
+        </div>
+        <footer class="mdl-mini-footer">
+            <div class="mdl-mini-footer__left-section">
+                <div class="mdl-logo">DreDiki 2017</div>
+            </div>
+            <div class="mdl-mini-footer__right-section">
+                <ul class="mdl-mini-footer__link-list">
+                    <li><a href="#">Help</a></li>
+                    <li><a href="#">Privacy & Terms</a></li>
+                </ul>
+            </div>
+        </footer>
+    </main>
+</div>
+<script>window.jQuery || document.write('<script src="js/vendor/jquery-{{JQUERY_VERSION}}.min.js"><\/script>')</script>
+<script src="js/plugins.js"></script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+
+html, body {
+    font-family: 'Roboto', 'Helvetica', sans-serif;
+    margin: 0;
+    padding: 0;
+}
+.chat_content{
+    overflow-y : scroll;
+}
+.chat_content div{
+    display: block;
+}
+/*清浮动*/
+.clearfix:before,.clearfix:after {content: ".";display: block;height: 0;visibility: hidden;}
+.clearfix:after {clear: both;}
+.clearfix {zoom: 1;} /* IE < 8 */
+.talking-content {
+    border-radius: 2px;
+    padding: 16px 16px;
+    margin-bottom: 16px;
+    position: relative;
+}
+.talking-item-time {
+    text-align: center;
+}
+.talking-item{
+    word-wrap: break-word;
+    word-break: normal;
+}
+.talking-item div{
+    top: 2px;
+    float: left;
+    margin-left:14px;
+}
+.talking-item a{
+    position: relative;
+    float:left;
+    font-size: 14px;
+}
+.talking-item i{
+    float: left;
+    margin-left: 8px
+}
+.talking-item p {
+    word-break: break-all;
+    /*top: 4px;*/
+    /*float: left;*/
+    /*margin-left: 14px;*/
+    margin-top: 20px;
+    color: #333;
+    padding: 6px 18px;
+    line-height: 24px;
+    background: #f1f1f1;
+    -ms-border-radius: 6px;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    -o-border-radius: 6px;
+    border-radius: 6px;
+    position: relative;
+    max-width: 70%
+}
+
+.talking-item-self{
+    word-wrap: break-word;
+    word-break: normal;
+}
+.talking-item-self div{
+    top: 2px;
+    float: right;
+    margin-right: 14px;
+}
+.talking-item-self a{
+    position: relative;
+    float:right;
+    font-size: 14px;
+}
+
+
+.talking-item-self i{
+    float: right;
+    margin-right: 8px
+}
+.talking-item-self p {
+    word-break: break-all;
+    margin-top: 20px;
+    padding: 6px 18px;
+    color: #fff;
+    font-size: 14px;
+    line-height: 24px;
+    background: #19b955;
+    -ms-border-radius: 6px;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    -o-border-radius: 6px;
+    border-radius: 6px;
+    position: relative;
+    max-width: 70%
+}
+.mdl-main-content{
+    height: 100%;
+}
+.mdl-main .is-small-screen .talking-content {
+    padding: 16px 16px;
+}
+
+.mdl-chat-input {
+    width: 85%;
+}
+
+.mdl-chat-input-button {
+    width: 20%;
+}
+
+.mdl-chatview{
+    /*height: 100%;*/
+    /*padding-bottom: 108px;*/
+}
+.chat_input{
+    position: absolute;
+    bottom: 0;
+    left: 16px;
+    right:16px;
+}
+/*.mdl-main section.section--footer {*/
+/*padding: 64px 0;*/
+/*margin: 0 -8px -8px -8px;*/
+/*bottom: 0;*/
+/*}*/
+.mdl-mini-footer {
+    /*position: absolute !important;*/
+    /*bottom: 0 !important;*/
+    /*left: 0 !important;*/
+    /*right: 0 !important;*/
+    padding: 16px 16px;
+}
+.mdl-logo{
+    margin-bottom: auto;
+}
+
+.mdl-dialog {
+    border: none;
+    box-shadow: 0 9px 46px 8px rgba(0, 0, 0, 0.14), 0 11px 15px -7px rgba(0, 0, 0, 0.12), 0 24px 38px 3px rgba(0, 0, 0, 0.2);
+    width: 280px;
+}
+
+.mdl-dialog__title {
+    padding: 24px 24px 0;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.mdl-dialog__actions {
+    padding: 8px 8px 8px 24px;
+    display: -webkit-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-direction: row-reverse;
+    -ms-flex-direction: row-reverse;
+    flex-direction: row-reverse;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
+    flex-wrap: wrap;
+}
+
+.mdl-dialog__actions > * {
+    margin-right: 8px;
+    height: 36px;
+}
+
+.mdl-dialog__actions > *:first-child {
+    margin-right: 0;
+}
+
+.mdl-dialog__actions--full-width {
+    padding: 0 0 8px 0;
+}
+
+.mdl-dialog__actions--full-width > * {
+    height: 48px;
+    -webkit-flex: 0 0 100%;
+    -ms-flex: 0 0 100%;
+    flex: 0 0 100%;
+    padding-right: 16px;
+    margin-right: 0;
+    text-align: right;
+}
+
+.mdl-dialog__content {
+    padding: 20px 24px 24px 24px;
+    color: rgba(0, 0, 0, 0.54);
+}

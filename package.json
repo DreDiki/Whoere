@@ -5,7 +5,11 @@
   "main": "server.js",
   "dependencies": {
     "express": "^4.15.1",
-    "socket.io": "^1.7.3"
+    "mongodb": "^2.2.25",
+    "mysql": "latest",
+    "socket.io": "^1.7.3",
+    "blueimp-md5": "latest",
+    "socket.io-client": "latest"
   },
   "devDependencies": {},
   "scripts": {
